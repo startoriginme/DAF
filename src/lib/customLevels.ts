@@ -1,5 +1,5 @@
 import { LevelConfig, PlayerProfile, AntFormation, CustomPowerUpPlacement, CustomSpeedPortalPlacement } from '../types/game';
-import { supabase, supabaseAdmin, isMisioriUser } from './supabase';
+import { supabase, supabaseAdmin, isSubnocteUser } from './supabase';
 import { getSongById } from './songCatalog';
 
 export interface CustomAnthillPlacement {
@@ -480,7 +480,7 @@ export async function fetchUserCreatedLevels(profile?: PlayerProfile): Promise<C
           difficulty: row.difficulty || puc.difficulty || 'Normal',
           verified: Boolean(row.verified),
           published: Boolean(row.published),
-          ratedByMisiori: Boolean((row as any).ratedByMisiori || (row as any).rated_by_misiori || puc.ratedByMisiori),
+          ratedByMisiori: Boolean((row as any).ratedBySubnocte || (row as any).rated_by_subnocte || (row as any).ratedByMisiori || (row as any).rated_by_misiori || puc.ratedBySubnocte || puc.ratedByMisiori),
           plays: row.plays || 0,
           formations:
             (Array.isArray(row.formations) && row.formations.length > 0 ? row.formations : null) ||
@@ -805,8 +805,8 @@ export async function deleteCustomLevelDraft(levelId: string, profile?: PlayerPr
 
   // 4. Delete from Supabase
   try {
-    const isMisiori = profile && isMisioriUser(profile.username, profile.email);
-    if (isMisiori) {
+    const isSubnocte = profile && isSubnocteUser(profile.username, profile.email);
+    if (isSubnocte) {
       await supabaseAdmin.from('custom_levels').delete().eq('id', levelId);
       await supabase.from('custom_levels').delete().eq('id', levelId);
     } else if (profile && profile.id && !profile.id.startsWith('guest_')) {
@@ -1121,15 +1121,15 @@ export async function updateCreatorUsernameInAllLevels(
 }
 
 /**
- * ONLY @misiori can rate a level difficulty!
+ * ONLY @subnocte can rate a level difficulty!
  */
 export async function rateLevelDifficulty(
   levelId: string,
   newDifficulty: CustomLevelDifficulty,
   profile: PlayerProfile
 ): Promise<boolean> {
-  if (!isMisioriUser(profile.username, profile.email)) {
-    console.error('Unauthorized: ONLY @misiori can rate level difficulty!');
+  if (!isSubnocteUser(profile.username, profile.email)) {
+    console.error('Unauthorized: ONLY @subnocte can rate level difficulty!');
     return false;
   }
 
@@ -1141,6 +1141,7 @@ export async function rateLevelDifficulty(
   if (found) {
     found.difficulty = newDifficulty;
     found.verified = true;
+    (found as any).ratedBySubnocte = isRated;
     (found as any).ratedByMisiori = isRated;
     found.updatedAt = new Date().toISOString();
     saveLocalCommunityCache(community);
@@ -1152,6 +1153,7 @@ export async function rateLevelDifficulty(
   if (dFound) {
     dFound.difficulty = newDifficulty;
     dFound.verified = true;
+    (dFound as any).ratedBySubnocte = isRated;
     (dFound as any).ratedByMisiori = isRated;
     saveDraftLevel(dFound, profile);
   }
@@ -1180,13 +1182,13 @@ export async function rateLevelDifficulty(
 
 /**
  * Delete a community level.
- * Allowed for @misiori (inappropriate levels) OR the level's creator!
+ * Allowed for @subnocte (inappropriate levels) OR the level's creator!
  */
 export async function deleteCommunityLevel(
   levelId: string,
   profile?: PlayerProfile
 ): Promise<boolean> {
-  const isMisiori = profile && isMisioriUser(profile.username, profile.email);
+  const isSubnocte = profile && isSubnocteUser(profile.username, profile.email);
   const community = getLocalCommunityCache();
   const targetLevel = community.find((l) => l.id === levelId);
 
@@ -1199,8 +1201,8 @@ export async function deleteCommunityLevel(
       (profile.username && targetLevel.creatorUsername.toLowerCase() === profile.username.toLowerCase()))
   );
 
-  if (!isMisiori && !isOwner) {
-    console.error('Unauthorized: ONLY @misiori or the level creator can delete this level!');
+  if (!isSubnocte && !isOwner) {
+    console.error('Unauthorized: ONLY @subnocte or the level creator can delete this level!');
     return false;
   }
 
@@ -1223,7 +1225,7 @@ export async function deleteCommunityLevel(
 
   // Delete from Supabase via supabaseAdmin and supabase
   try {
-    if (isMisiori) {
+    if (isSubnocte) {
       await supabaseAdmin.from('custom_levels').delete().eq('id', levelId);
       await supabase.from('custom_levels').delete().eq('id', levelId);
     } else if (profile?.id) {
@@ -1243,7 +1245,7 @@ export async function deleteCommunityLevel(
 /**
  * Universal helper: check if a level gives points and sugar cubes.
  * - Official campaign levels give points by default!
- * - Custom levels: must be rated by misiori (difficulty !== 'Unrated' or ratedByMisiori)
+ * - Custom levels: must be rated by subnocte (difficulty !== 'Unrated' or ratedBySubnocte)
  * - Levels tested in editor verification mode do not give points.
  */
 export function isLevelRated(level: LevelConfig | CustomLevel | any | null | undefined): boolean {
@@ -1258,9 +1260,14 @@ export function isLevelRated(level: LevelConfig | CustomLevel | any | null | und
   if (level.isVerification) {
     return false;
   }
-  // Custom level: ONLY rated if rated by misiori
+  // Custom level: ONLY rated if rated by subnocte
   const custom = level.customData || level;
-  if (custom.ratedByMisiori || custom.rated_by_misiori) {
+  if (
+    custom.ratedBySubnocte ||
+    custom.rated_by_subnocte ||
+    custom.ratedByMisiori ||
+    custom.rated_by_misiori
+  ) {
     return true;
   }
   return false;
@@ -1285,15 +1292,17 @@ export function customLevelToLevelConfig(
     Crazy: '#f43f5e',
   };
 
-  // A custom level is rated for leaderboard/points ONLY if rated by misiori
-  const isRatedByMisiori = Boolean(
+  // A custom level is rated for leaderboard/points ONLY if rated by subnocte
+  const isRatedBySubnocte = Boolean(
+    (custom as any).ratedBySubnocte ||
+    (custom as any).rated_by_subnocte ||
     (custom as any).ratedByMisiori ||
     (custom as any).rated_by_misiori
   );
 
   // Verification mode is active during creator test in LevelEditor
-  const effectiveVerification = Boolean(isVerification && !isRatedByMisiori);
-  const isRated = Boolean(isRatedByMisiori && !effectiveVerification);
+  const effectiveVerification = Boolean(isVerification && !isRatedBySubnocte);
+  const isRated = Boolean(isRatedBySubnocte && !effectiveVerification);
 
   // The intended difficulty chosen in the editor (or default Normal)
   const chosenDifficulty: CustomLevelDifficulty =
@@ -1375,8 +1384,9 @@ export function customLevelToLevelConfig(
       customPowerUps: powerUps,
       customSpeedPortals: portals,
       difficulty: chosenDifficulty,
-      ratedByMisiori: isRatedByMisiori,
-      verified: Boolean(custom.verified || isRatedByMisiori),
+      ratedBySubnocte: isRatedBySubnocte,
+      ratedByMisiori: isRatedBySubnocte,
+      verified: Boolean(custom.verified || isRatedBySubnocte),
       formations:
         (Array.isArray(custom.formations) && custom.formations.length > 0 ? custom.formations : null) ||
         (custom.powerUpChances && Array.isArray((custom.powerUpChances as any).formations) && (custom.powerUpChances as any).formations.length > 0 ? (custom.powerUpChances as any).formations : null) ||

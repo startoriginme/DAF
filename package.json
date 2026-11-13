@@ -2,8 +2,8 @@
   "name": "dangerous-ant-farm",
   "private": true,
   "version": "1.0.2",
-  "description": "rhythm-based game by misiori",
-  "author": "misiori",
+  "description": "rhythm-based game by subnocte",
+  "author": "subnocte",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -52,9 +52,9 @@
     "wait-on": "^8.0.1"
   },
   "build": {
-    "appId": "com.misiori.antfarm",
+    "appId": "com.subnocte.antfarm",
     "productName": "Ant Farm",
-    "copyright": "Copyright © 2026 misiori",
+    "copyright": "Copyright © 2026 subnocte",
     "publish": null,
     "directories": {
       "output": "release"

@@ -26,7 +26,7 @@ import {
 } from '../lib/customLevels';
 import { PlayerProfile } from '../types/game';
 import { sound } from '../lib/audio';
-import { isMisioriUser } from '../lib/supabase';
+import { isSubnocteUser } from '../lib/supabase';
 import { DIFFICULTY_COLORS } from '../lib/constants';
 import { ChamberInfoModal, ChamberInfoData } from './ChamberInfoModal';
 
@@ -54,13 +54,13 @@ export const DiscoverLevels: React.FC<DiscoverLevelsProps> = ({
   const [savedIds, setSavedIds] = useState<string[]>([]);
   const [infoModalTarget, setInfoModalTarget] = useState<ChamberInfoData | null>(null);
 
-  // Rating modal for @misiori
+  // Rating modal for @subnocte
   const [ratingLevel, setRatingLevel] = useState<CustomLevel | null>(null);
   // Delete confirmation modal
   const [deletingLevel, setDeletingLevel] = useState<CustomLevel | null>(null);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
 
-  const isMisiori = isMisioriUser(profile.username, profile.email);
+  const isSubnocte = isSubnocteUser(profile.username, profile.email);
 
   const loadLevels = async () => {
     setLoading(true);
@@ -88,7 +88,7 @@ export const DiscoverLevels: React.FC<DiscoverLevelsProps> = ({
 
   const handleRate = async (lvl: CustomLevel, newDiff: CustomLevelDifficulty) => {
     sound.playClick();
-    if (!isMisiori) return;
+    if (!isSubnocte) return;
     await rateLevelDifficulty(lvl.id, newDiff, profile);
     setRatingLevel(null);
     loadLevels();
@@ -170,9 +170,9 @@ export const DiscoverLevels: React.FC<DiscoverLevelsProps> = ({
         </button>
 
         <div className="w-20 flex justify-end">
-          {isMisiori && (
+          {isSubnocte && (
             <span className="px-2 py-0.5 rounded-full bg-sky-500/20 border border-sky-400/50 text-sky-300 text-xs font-['Patrick_Hand'] lowercase">
-              @misiori
+              @subnocte
             </span>
           )}
         </div>
@@ -263,8 +263,10 @@ export const DiscoverLevels: React.FC<DiscoverLevelsProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {displayedList.map((lvl) => {
               const isSaved = savedIds.includes(lvl.id);
-              const isCreatorMisiori =
+              const isCreatorSubnocte =
+                lvl.creatorUsername.toLowerCase().includes('subnocte') ||
                 lvl.creatorUsername.toLowerCase().includes('misiori') ||
+                lvl.creatorId === 'creator_subnocte' ||
                 lvl.creatorId === 'creator_misiori';
               const diffColor =
                 lvl.difficulty === 'Unrated'
@@ -331,11 +333,11 @@ export const DiscoverLevels: React.FC<DiscoverLevelsProps> = ({
                             onOpenCreatorProfile(lvl.creatorUsername);
                           }
                         }}
-                        className="flex items-center gap-1 text-neutral-300 hover:text-white underline-offset-2 hover:underline cursor-pointer transition-colors"
+                        className="flex items-center gap-1.5 flex-wrap text-neutral-300 hover:text-white underline-offset-2 hover:underline cursor-pointer transition-colors"
                         title={`view ${lvl.creatorUsername}'s profile`}
                       >
                         <span>by {lvl.creatorUsername}</span>
-                        {isCreatorMisiori && (
+                        {isCreatorSubnocte && (
                           <CheckCircle2 className="w-3.5 h-3.5 fill-sky-400 text-neutral-950 inline-block shrink-0" />
                         )}
                       </button>
@@ -382,14 +384,14 @@ export const DiscoverLevels: React.FC<DiscoverLevelsProps> = ({
                       )}
                     </button>
 
-                    {/* Action buttons: Rate Difficulty (misiori only) & Delete (misiori or creator) */}
-                    {(isMisiori || (profile && !profile.id.startsWith('guest_') && (lvl.creatorId === profile.id || (profile.username && lvl.creatorUsername.toLowerCase() === profile.username.toLowerCase())))) && (
+                    {/* Action buttons: Rate Difficulty (subnocte only) & Delete (subnocte or creator) */}
+                    {(isSubnocte || (profile && !profile.id.startsWith('guest_') && (lvl.creatorId === profile.id || (profile.username && lvl.creatorUsername.toLowerCase() === profile.username.toLowerCase())))) && (
                       <div className="flex items-center gap-1 border-l border-neutral-800 pl-1">
-                        {isMisiori && (
+                        {isSubnocte && (
                           <button
                             onClick={() => setRatingLevel(lvl)}
                             className="p-1.5 rounded-xl bg-sky-950/60 hover:bg-sky-900/80 text-sky-400 border border-sky-800/80 transition-colors cursor-pointer"
-                            title="@misiori: rate level difficulty"
+                            title="@subnocte: rate level difficulty"
                           >
                             <Star className="w-4 h-4" />
                           </button>
@@ -398,7 +400,7 @@ export const DiscoverLevels: React.FC<DiscoverLevelsProps> = ({
                         <button
                           onClick={() => handleDeleteClick(lvl)}
                           className="p-1.5 rounded-xl bg-rose-950/60 hover:bg-rose-900/80 text-rose-400 border border-rose-800/80 transition-colors cursor-pointer"
-                          title={isMisiori ? '@misiori: delete farm' : 'delete your farm'}
+                          title={isSubnocte ? '@subnocte: delete farm' : 'delete your farm'}
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -431,9 +433,9 @@ export const DiscoverLevels: React.FC<DiscoverLevelsProps> = ({
               <div className="flex items-center justify-between pb-2 border-b border-neutral-800">
                 <div>
                   <h3 className="font-['Caveat'] text-3xl text-neutral-100 lowercase">
-                    {isMisiori ? 'delete farm as @misiori?' : 'delete farm?'}
+                    {isSubnocte ? 'delete farm as @subnocte?' : 'delete farm?'}
                   </h3>
-                  {isMisiori && (
+                  {isSubnocte && (
                     <p className="text-xs font-['Patrick_Hand'] text-rose-400 lowercase">
                       inappropriate farm moderation
                     </p>
@@ -469,7 +471,7 @@ export const DiscoverLevels: React.FC<DiscoverLevelsProps> = ({
                   className="flex-1 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white font-['Patrick_Hand'] text-base lowercase font-bold cursor-pointer transition-all shadow-lg shadow-rose-900/30 flex items-center justify-center gap-1.5"
                 >
                   <Trash2 className="w-4 h-4" />
-                  <span>{isDeleting ? 'deleting...' : isMisiori ? 'delete as @misiori' : 'delete'}</span>
+                  <span>{isDeleting ? 'deleting...' : isSubnocte ? 'delete as @subnocte' : 'delete'}</span>
                 </button>
               </div>
             </motion.div>
@@ -477,7 +479,7 @@ export const DiscoverLevels: React.FC<DiscoverLevelsProps> = ({
         )}
       </AnimatePresence>
 
-      {/* @misiori Difficulty Rating Modal */}
+      {/* @subnocte Difficulty Rating Modal */}
       <AnimatePresence>
         {ratingLevel && (
           <div
@@ -497,7 +499,7 @@ export const DiscoverLevels: React.FC<DiscoverLevelsProps> = ({
                     rate farm difficulty
                   </h3>
                   <p className="text-xs font-['Patrick_Hand'] text-sky-300 lowercase">
-                    @misiori verified rating
+                    @subnocte verified rating
                   </p>
                 </div>
                 <button

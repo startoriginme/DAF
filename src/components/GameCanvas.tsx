@@ -161,8 +161,8 @@ function getPhaseInterval(difficulty: string): number {
 interface GameCanvasProps {
   level: LevelConfig;
   profile: PlayerProfile;
-  onGameOver: (levelId: number, score: number, sugarEarned: number, progressPercent?: number, isEndless?: boolean) => void;
-  onVictory: (levelId: number, score: number, sugarEarned: number, difficulty: string, isEndless?: boolean) => void;
+  onGameOver: (levelId: number, score: number, sugarEarned: number, progressPercent?: number, isEndless?: boolean, survivedSeconds?: number) => void;
+  onVictory: (levelId: number, score: number, sugarEarned: number, difficulty: string, isEndless?: boolean, survivedSeconds?: number) => void;
   onExit: () => void;
   onProgressDailyChallenge?: (event: ChallengeEvent) => void;
   onLevelVerified?: (customLevelId: string) => void;
@@ -1939,7 +1939,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
             if (healthRef.current <= 0) {
               isGameOverRef.current = true;
               setGameState('lost');
-              onGameOver(level.id, scoreRef.current, sugarRef.current, progressRef.current, Boolean(level.isEndless));
+              onGameOver(level.id, scoreRef.current, sugarRef.current, progressRef.current, Boolean(level.isEndless), Math.round(gameTimeRef.current));
               return;
             }
           }
@@ -2007,7 +2007,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
                 onLevelVerified?.(customData.id);
               }
             }
-            onVictory(level.id, scoreRef.current, sugarRef.current, level.difficulty, Boolean(level.isEndless));
+            onVictory(level.id, scoreRef.current, sugarRef.current, level.difficulty, Boolean(level.isEndless), Math.round(gameTimeRef.current));
             return;
           }
         }
@@ -2437,7 +2437,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
                 if (healthRef.current <= 0) {
                   isGameOverRef.current = true;
                   setGameState('lost');
-                  onGameOver(level.id, scoreRef.current, sugarRef.current, progressRef.current, Boolean(level.isEndless));
+                  onGameOver(level.id, scoreRef.current, sugarRef.current, progressRef.current, Boolean(level.isEndless), Math.round(gameTimeRef.current));
                 }
               }
             }
@@ -2484,7 +2484,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
                 if (healthRef.current <= 0) {
                   isGameOverRef.current = true;
                   setGameState('lost');
-                  onGameOver(level.id, scoreRef.current, sugarRef.current, progressRef.current, Boolean(level.isEndless));
+                  onGameOver(level.id, scoreRef.current, sugarRef.current, progressRef.current, Boolean(level.isEndless), Math.round(gameTimeRef.current));
                 }
               }
             }
@@ -3183,7 +3183,7 @@ export const GameCanvas: React.FC<GameCanvasProps> = ({
                       noclipEverUsedRef.current || noclipHitsRef.current > 0
                         ? Math.min(progressRef.current, 99)
                         : progressRef.current;
-                    onGameOver(level.id, scoreRef.current, sugarRef.current, reportedProgress, Boolean(level.isEndless));
+                    onGameOver(level.id, scoreRef.current, sugarRef.current, reportedProgress, Boolean(level.isEndless), Math.round(gameTimeRef.current));
                   }
                   onExit();
                 }}

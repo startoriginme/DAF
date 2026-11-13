@@ -14,10 +14,11 @@ import { sound } from '../lib/audio';
 import { PWAInstallButton } from './PWAInstallButton';
 import { getClaimableCount } from '../lib/dailyChallenges';
 
-export const isMisioriUser = (username?: string, email?: string) => {
+export const isSubnocteUser = (username?: string, email?: string) => {
   const clean = (username || '').toLowerCase().trim().replace(/^@/, '');
-  return clean === 'misiori' || (email && email.toLowerCase() === 'misiori.gg@gmail.com');
+  return clean === 'subnocte' || clean === 'subn0cte' || clean === 'misiori' || (email && (email.toLowerCase() === 'subn0cte.gg@gmail.com' || email.toLowerCase() === 'misiori.gg@gmail.com'));
 };
+export const isMisioriUser = isSubnocteUser;
 
 interface MainMenuProps {
   profile: PlayerProfile;
@@ -199,8 +200,8 @@ export const MainMenu: React.FC<MainMenuProps> = ({
             <span className="font-['Patrick_Hand'] text-base text-neutral-200 leading-none">
               {profile.username}
             </span>
-            {isMisioriUser(profile.username, profile.email) && (
-              <span className="inline-flex items-center justify-center self-center" title="verified @misiori">
+            {isSubnocteUser(profile.username, profile.email) && (
+              <span className="inline-flex items-center justify-center self-center" title="verified @subnocte">
                 <CheckCircle2 className="w-3.5 h-3.5 fill-sky-400 text-neutral-950 inline-block shrink-0" />
               </span>
             )}
@@ -343,12 +344,12 @@ export const MainMenu: React.FC<MainMenuProps> = ({
 
               <div className="mt-4 pt-3 border-t border-neutral-800 text-center">
                 <a
-                  href="https://misiori.github.io"
+                  href="https://subn0cte.github.io"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-cyan-400 hover:text-cyan-300 underline font-['Patrick_Hand'] text-xl lowercase transition-colors"
                 >
-                  misiori
+                  subnocte
                 </a>
               </div>
 

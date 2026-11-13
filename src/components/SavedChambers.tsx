@@ -18,7 +18,7 @@ import {
 import { PlayerProfile } from '../types/game';
 import { sound } from '../lib/audio';
 import { DIFFICULTY_COLORS } from '../lib/constants';
-import { isMisioriUser } from '../lib/supabase';
+import { isSubnocteUser } from '../lib/supabase';
 
 interface SavedChambersProps {
   profile: PlayerProfile;
@@ -122,7 +122,7 @@ export const SavedChambers: React.FC<SavedChambersProps> = ({
               const progress = getCustomLevelProgress(profile, lvl);
               const highScore = getCustomLevelHighScore(profile, lvl);
               const isBeaten = progress >= 100;
-              const isCreatorMisiori = isMisioriUser(lvl.creatorUsername);
+              const isCreatorSubnocte = isSubnocteUser(lvl.creatorUsername);
 
               return (
                 <motion.div
@@ -162,7 +162,7 @@ export const SavedChambers: React.FC<SavedChambersProps> = ({
                         title={`view ${lvl.creatorUsername}'s profile`}
                       >
                         <span>by {lvl.creatorUsername}</span>
-                        {isCreatorMisiori && (
+                        {isCreatorSubnocte && (
                           <CheckCircle2 className="w-3.5 h-3.5 fill-sky-400 text-neutral-950 inline-block shrink-0" />
                         )}
                       </button>

@@ -206,6 +206,7 @@ export interface PlayerProfile {
   beaten_levels?: number[];
   level_progress?: Record<string | number, number>;
   bonus_pts?: number;
+  total_game_time_seconds?: number;
   daily_challenges?: DailyChallengeProgress;
   beaten_level_details?: Record<string | number, { difficulty: string; name?: string; isCustom?: boolean; isRated?: boolean }>;
   created_at?: string;

@@ -225,7 +225,7 @@ export default function App() {
   // Only onVictory is allowed to do that. Progress is clamped to 99% max.
   // Sugar and high score points are ONLY added if the level is rated.
   const handleGameOver = useCallback(
-    (lvlId: number, finalScore: number, sugarEarned: number, progressPercent = 0, isEndless = false) => {
+    (lvlId: number, finalScore: number, sugarEarned: number, progressPercent = 0, isEndless = false, survivedSeconds = 0) => {
       const idNum = Number(lvlId);
       const curLevel = selectedLevelRef.current;
       const isRated = isLevelRated(curLevel);
@@ -263,12 +263,15 @@ export default function App() {
             }
           : { ...(prevProfile.high_scores || {}) };
 
+        const newTotalPlaytime = (prevProfile.total_game_time_seconds || 0) + Math.max(0, survivedSeconds);
+
         let updated: PlayerProfile = {
           ...prevProfile,
           sugar_cubes: isRated ? (prevProfile.sugar_cubes || 0) + sugarEarned : (prevProfile.sugar_cubes || 0),
           high_scores: updatedHighScores,
           level_progress: updatedProgress,
           beaten_levels: Array.from(beatenSet),
+          total_game_time_seconds: newTotalPlaytime,
         };
 
         if (isRated) {
@@ -284,6 +287,7 @@ export default function App() {
             beaten_levels: updated.beaten_levels,
             level_progress: updated.level_progress,
             daily_challenges: updated.daily_challenges,
+            total_game_time_seconds: updated.total_game_time_seconds,
           });
         }
         return updated;
@@ -297,7 +301,7 @@ export default function App() {
   // Sugar and pts are ONLY added to account if the level is rated!
   // Beaten statistics are recorded for BOTH official and user levels.
   const handleVictory = useCallback(
-    (lvlId: number, finalScore: number, sugarEarned: number, difficulty: string, isEndless = false) => {
+    (lvlId: number, finalScore: number, sugarEarned: number, difficulty: string, isEndless = false, survivedSeconds = 0) => {
       const idNum = Number(lvlId);
       const victoryBonus = 25;
       const curLevel = selectedLevelRef.current;
@@ -347,6 +351,8 @@ export default function App() {
           },
         };
 
+        const newTotalPlaytime = (prevProfile.total_game_time_seconds || 0) + Math.max(0, survivedSeconds);
+
         let updated: PlayerProfile = {
           ...prevProfile,
           sugar_cubes: isRated
@@ -356,6 +362,7 @@ export default function App() {
           level_progress: updatedProgress,
           beaten_levels: Array.from(beatenSet),
           beaten_level_details: updatedBeatenDetails,
+          total_game_time_seconds: newTotalPlaytime,
         };
 
         if (isRated) {
@@ -373,6 +380,7 @@ export default function App() {
             beaten_levels: updated.beaten_levels,
             level_progress: updated.level_progress,
             daily_challenges: updated.daily_challenges,
+            total_game_time_seconds: updated.total_game_time_seconds,
           });
         }
 

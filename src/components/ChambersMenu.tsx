@@ -381,7 +381,7 @@ export const ChambersMenu: React.FC<ChambersMenuProps> = ({
                                 name: lvl.name,
                                 difficulty: lvl.difficulty,
                                 difficultyColor: diffColor,
-                                creatorUsername: 'misiori',
+                                creatorUsername: 'subnocte',
                                 description: lvl.mechanicHint || lvl.description,
                                 isOfficial: true,
                               });

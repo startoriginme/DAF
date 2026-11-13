@@ -22,11 +22,18 @@ export const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KE
   },
 });
 
-export const isMisioriUser = (username?: string, email?: string): boolean => {
+export const isSubnocteUser = (username?: string, email?: string): boolean => {
   const clean = (username || '').toLowerCase().trim().replace(/^@/, '');
   const cleanEmail = (email || '').toLowerCase().trim();
-  return clean === 'misiori' || cleanEmail === 'misiori.gg@gmail.com';
+  return (
+    clean === 'subnocte' ||
+    clean === 'subn0cte' ||
+    clean === 'misiori' ||
+    cleanEmail === 'subn0cte.gg@gmail.com' ||
+    cleanEmail === 'misiori.gg@gmail.com'
+  );
 };
+export const isMisioriUser = isSubnocteUser;
 
 export const SQL_SETUP_SCRIPT = `-- ===============================================================
 -- DANGEROUS ANT FARM - SUPABASE DATABASE INITIALIZATION SCRIPT
@@ -67,6 +74,9 @@ BEGIN
   END IF;
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='profiles' AND column_name='level_progress') THEN
     ALTER TABLE public.profiles ADD COLUMN level_progress JSONB DEFAULT '{}'::jsonb NOT NULL;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='profiles' AND column_name='total_game_time_seconds') THEN
+    ALTER TABLE public.profiles ADD COLUMN total_game_time_seconds BIGINT DEFAULT 0 NOT NULL;
   END IF;
 END $$;
 
@@ -296,6 +306,7 @@ export async function fetchProfileById(userId: string): Promise<PlayerProfile | 
       daily_challenges: data.daily_challenges,
       bonus_pts: data.bonus_pts || 0,
       avatar_url: data.avatar_url,
+      total_game_time_seconds: data.total_game_time_seconds ? Number(data.total_game_time_seconds) : 0,
       created_at: data.created_at,
     };
   } catch (err) {
@@ -383,6 +394,7 @@ export function mergeProfiles(cloud: PlayerProfile, local: PlayerProfile): Playe
     avatar_url: cloud.avatar_url || local.avatar_url,
     bonus_pts: Math.max(cloud.bonus_pts || 0, local.bonus_pts || 0),
     daily_challenges: mergedDailyChallenges,
+    total_game_time_seconds: Math.max(cloud.total_game_time_seconds || 0, local.total_game_time_seconds || 0),
   };
 }
 
@@ -426,6 +438,7 @@ export async function updateProfile(
     if (updates.avatar_url !== undefined) payload.avatar_url = updates.avatar_url;
     if (updates.bonus_pts !== undefined) payload.bonus_pts = updates.bonus_pts;
     if (updates.daily_challenges !== undefined) payload.daily_challenges = updates.daily_challenges;
+    if (updates.total_game_time_seconds !== undefined) payload.total_game_time_seconds = updates.total_game_time_seconds;
 
     // Try standard update first
     const { error: updateError, data } = await supabase
@@ -467,10 +480,10 @@ export async function fetchLeaderboard(): Promise<(PlayerProfile & { total_pts: 
       .select('id, username, email, active_skin, unlocked_skins, sugar_cubes, high_scores, beaten_levels, avatar_url, created_at, bonus_pts')
       .limit(30);
 
-    const misioriVerified: PlayerProfile & { total_pts: number; levels_cleared: number } = {
-      id: 'creator_misiori',
-      username: '@misiori',
-      email: 'misiori.gg@gmail.com',
+    const subnocteVerified: PlayerProfile & { total_pts: number; levels_cleared: number } = {
+      id: 'creator_subnocte',
+      username: '@subnocte',
+      email: 'subn0cte.gg@gmail.com',
       active_skin: 'cyber',
       unlocked_skins: ['cyber', 'amber', 'quantum'],
       sugar_cubes: 9999,
@@ -482,7 +495,7 @@ export async function fetchLeaderboard(): Promise<(PlayerProfile & { total_pts: 
     };
 
     if (error || !data || data.length === 0) {
-      return [misioriVerified];
+      return [subnocteVerified];
     }
 
     const players: (PlayerProfile & { total_pts: number; levels_cleared: number })[] = data.map((row) => {
@@ -509,9 +522,9 @@ export async function fetchLeaderboard(): Promise<(PlayerProfile & { total_pts: 
       };
     });
 
-    // Make sure @misiori is included in the leaderboard
-    if (!players.some((p) => p.username.toLowerCase().includes('misiori'))) {
-      players.push(misioriVerified);
+    // Make sure @subnocte is included in the leaderboard
+    if (!players.some((p) => p.username.toLowerCase().includes('subnocte') || p.username.toLowerCase().includes('misiori'))) {
+      players.push(subnocteVerified);
     }
 
     // Sort descending by total_pts
@@ -530,10 +543,10 @@ export async function searchProfiles(query: string): Promise<PlayerProfile[]> {
   const trimmed = query.trim();
   if (!trimmed) return [];
 
-  const misioriProfile: PlayerProfile = {
-    id: 'creator_misiori',
-    username: '@misiori',
-    email: 'misiori.gg@gmail.com',
+  const subnocteProfile: PlayerProfile = {
+    id: 'creator_subnocte',
+    username: '@subnocte',
+    email: 'subn0cte.gg@gmail.com',
     active_skin: 'cyber',
     unlocked_skins: ['cyber', 'amber', 'quantum'],
     sugar_cubes: 9999,
@@ -564,17 +577,27 @@ export async function searchProfiles(query: string): Promise<PlayerProfile[]> {
       created_at: row.created_at,
     }));
 
-    if ('misiori'.includes(trimmed.toLowerCase().replace(/^@/, '')) || trimmed.toLowerCase().includes('misiori')) {
-      if (!list.some((r) => r.username.toLowerCase().includes('misiori'))) {
-        list.unshift(misioriProfile);
+    if (
+      'subnocte'.includes(trimmed.toLowerCase().replace(/^@/, '')) ||
+      trimmed.toLowerCase().includes('subnocte') ||
+      trimmed.toLowerCase().includes('subn0cte') ||
+      'misiori'.includes(trimmed.toLowerCase().replace(/^@/, '')) ||
+      trimmed.toLowerCase().includes('misiori')
+    ) {
+      if (!list.some((r) => r.username.toLowerCase().includes('subnocte') || r.username.toLowerCase().includes('misiori'))) {
+        list.unshift(subnocteProfile);
       }
     }
 
     return list;
   } catch (err) {
     console.warn('searchProfiles exception:', err);
-    if ('misiori'.includes(trimmed.toLowerCase().replace(/^@/, '')) || trimmed.toLowerCase().includes('misiori')) {
-      return [misioriProfile];
+    if (
+      'subnocte'.includes(trimmed.toLowerCase().replace(/^@/, '')) ||
+      trimmed.toLowerCase().includes('subnocte') ||
+      trimmed.toLowerCase().includes('subn0cte')
+    ) {
+      return [subnocteProfile];
     }
     return [];
   }

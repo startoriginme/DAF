@@ -1,6 +1,6 @@
-import React, { useState, useRef, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Sparkles, Check, Lock, Box, Shield, Eye } from 'lucide-react';
+import { X, Sparkles, Check, Box } from 'lucide-react';
 import { SKINS } from '../lib/constants';
 import { Skin } from '../types/game';
 import { SkinRenderer } from './SkinRenderer';
@@ -29,8 +29,6 @@ export const SkinsModal: React.FC<SkinsModalProps> = ({
     SKINS.find((s) => s.id === activeSkinId) || SKINS[0]
   );
   const [filter, setFilter] = useState<RarityFilter>('All');
-  const [testMousePos, setTestMousePos] = useState({ x: 140, y: 75 });
-  const previewAreaRef = useRef<HTMLDivElement | null>(null);
 
   // Escape key to close modal
   useEffect(() => {
@@ -44,27 +42,16 @@ export const SkinsModal: React.FC<SkinsModalProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [onClose]);
 
-  const isUnlocked = (skinId: string) =>
+  const isUnlockedSkin = (skinId: string) =>
     unlockedSkinIds.includes(skinId) || skinId === 'amber';
-
-  const unlockedCount = SKINS.filter((s) => isUnlocked(s.id)).length;
 
   const filteredSkins = useMemo(() => {
     return SKINS.filter((skin) => {
       if (filter === 'All') return true;
-      if (filter === 'Owned') return isUnlocked(skin.id);
+      if (filter === 'Owned') return isUnlockedSkin(skin.id);
       return skin.rarity === filter;
     });
   }, [filter, unlockedSkinIds]);
-
-  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (!previewAreaRef.current) return;
-    const rect = previewAreaRef.current.getBoundingClientRect();
-    setTestMousePos({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
-    });
-  };
 
   const getRarityBadgeColor = (rarity?: string) => {
     switch (rarity) {
@@ -87,7 +74,7 @@ export const SkinsModal: React.FC<SkinsModalProps> = ({
         initial={{ opacity: 0, scale: 0.95, y: 15 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 15 }}
-        className="relative w-full max-w-5xl bg-neutral-900 border border-blue-900/60 rounded-3xl p-5 sm:p-7 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
+        className="relative w-full max-w-4xl bg-neutral-900 border border-blue-900/60 rounded-3xl p-5 sm:p-7 shadow-2xl overflow-hidden flex flex-col max-h-[92vh]"
       >
         {/* Glow ambient background */}
         <div
@@ -136,13 +123,18 @@ export const SkinsModal: React.FC<SkinsModalProps> = ({
         <div className="flex items-center gap-1.5 py-2.5 overflow-x-auto border-b border-neutral-800/60 no-scrollbar">
           {(['all', 'owned', 'common', 'rare', 'epic', 'legendary', 'mythic'] as const).map((r) => {
             const isSelected = filter.toLowerCase() === r;
-
             return (
               <button
                 key={r}
                 onClick={() => {
                   sound.playClick();
-                  setFilter(r === 'all' ? 'All' : r === 'owned' ? 'Owned' : (r.charAt(0).toUpperCase() + r.slice(1)) as RarityFilter);
+                  setFilter(
+                    r === 'all'
+                      ? 'All'
+                      : r === 'owned'
+                      ? 'Owned'
+                      : ((r.charAt(0).toUpperCase() + r.slice(1)) as RarityFilter)
+                  );
                 }}
                 className={`px-3 py-1 rounded-[220px_15px_200px_18px/15px_220px_18px_200px] font-['Patrick_Hand'] text-base lowercase whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
                   isSelected
@@ -156,189 +148,95 @@ export const SkinsModal: React.FC<SkinsModalProps> = ({
           })}
         </div>
 
-        {/* Main Grid: Left scrollable grid of skin cards (20+ skins), Right live interactive test pad */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 my-4 overflow-hidden flex-1 min-h-0">
-          {/* Scrollable Roster of Skins */}
-          <div className="lg:col-span-8 overflow-y-auto pr-1 grid grid-cols-1 sm:grid-cols-2 gap-2.5 max-h-[58vh]">
-            <AnimatePresence>
-              {filteredSkins.map((skin) => {
-                const unlocked = isUnlocked(skin.id);
-                const isActive = activeSkinId === skin.id;
-                const isSelected = selectedPreview.id === skin.id;
+        {/* Scrollable Roster of Skins */}
+        <div className="my-4 overflow-y-auto pr-1 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 flex-1 min-h-0 content-start max-h-[62vh]">
+          <AnimatePresence>
+            {filteredSkins.map((skin) => {
+              const unlocked = isUnlockedSkin(skin.id);
+              const isActive = activeSkinId === skin.id;
+              const isSelected = selectedPreview.id === skin.id;
 
-                return (
-                  <motion.div
-                    key={skin.id}
-                    layout
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    onClick={() => {
-                      setSelectedPreview(skin);
-                      if (unlocked) {
-                        sound.playClick();
-                        onSelectSkin(skin.id);
-                      } else if (sugarCubes >= skin.cost) {
-                        sound.playSugarCollect();
-                        onUnlockSkin(skin.id, skin.cost);
-                      } else {
-                        sound.playHitSound();
-                      }
-                    }}
-                    className={`group relative flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer ${
-                      isSelected
-                        ? 'bg-neutral-800/90 shadow-lg'
-                        : 'bg-neutral-900/60 hover:bg-neutral-800/50'
-                    }`}
-                    style={{
-                      borderColor: isSelected
-                        ? skin.color
-                        : 'rgba(255, 255, 255, 0.08)',
-                    }}
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <SkinRenderer skinId={skin.id} size={42} animated />
-
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          <span className="font-['Patrick_Hand'] text-base tracking-wide text-white truncate lowercase">
-                            {skin.name.toLowerCase()}
-                          </span>
-                          {skin.rarity && (
-                            <span
-                              className={`text-[10px] font-['Patrick_Hand'] lowercase px-1.5 py-0.2 rounded-md border ${getRarityBadgeColor(
-                                skin.rarity
-                              )}`}
-                            >
-                              {skin.rarity.toLowerCase()}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                      {isActive ? (
-                        <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-['Patrick_Hand'] bg-emerald-950/60 text-emerald-400 border border-emerald-800 lowercase">
-                          <Check className="w-3 h-3" />
-                          equipped
-                        </span>
-                      ) : unlocked ? (
-                        <span className="px-2 py-0.5 rounded-full text-xs font-['Patrick_Hand'] bg-neutral-800 text-neutral-400 lowercase">
-                          owned
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1 text-xs font-['Patrick_Hand'] text-neutral-300 bg-neutral-800 px-2 py-0.5 rounded-lg border border-neutral-700 lowercase">
-                          <Box className="w-3 h-3 text-white" />
-                          <span>{skin.cost}</span>
-                        </span>
-                      )}
-                    </div>
-                  </motion.div>
-                );
-              })}
-            </AnimatePresence>
-          </div>
-
-          {/* Right Live Test Pad & Details (Completely hidden on phones per request) */}
-          <div className="hidden sm:flex lg:col-span-4 flex-col justify-between bg-neutral-950/90 rounded-2xl border border-neutral-800 p-4">
-            <div>
-              {/* Desktop / tablet reticle test pad */}
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-xs font-['Patrick_Hand'] text-neutral-400 lowercase tracking-wider flex items-center gap-1">
-                    <Eye className="w-3.5 h-3.5 text-neutral-300" />
-                    reticle test
-                  </span>
-                  <span
-                    className="text-xs font-['Patrick_Hand'] lowercase px-2 py-0.5 rounded-md"
-                    style={{ color: selectedPreview.color, background: `${selectedPreview.color}20` }}
-                  >
-                    {(selectedPreview.rarity || 'common').toLowerCase()}
-                  </span>
-                </div>
-
-                {/* Interactive mouse tracking box */}
-                <div
-                  ref={previewAreaRef}
-                  onMouseMove={handleMouseMove}
-                  className="relative h-44 rounded-xl border border-dashed border-neutral-800 bg-neutral-900/70 overflow-hidden cursor-none flex items-center justify-center select-none shadow-inner"
-                >
-                  <div className="absolute inset-0 bg-[radial-gradient(#ffffff08_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
-
-                  {/* Simulated cursor following mouse */}
-                  <div
-                    className="absolute pointer-events-none transition-transform duration-75 ease-out"
-                    style={{
-                      left: testMousePos.x,
-                      top: testMousePos.y,
-                      transform: 'translate(-50%, -50%)',
-                    }}
-                  >
-                    <SkinRenderer skinId={selectedPreview.id} size={38} />
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-4 space-y-2">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-['Caveat'] text-2xl font-bold text-white lowercase">
-                    {selectedPreview.name.toLowerCase()}
-                  </h3>
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      className="w-3 h-3 rounded-full"
-                      style={{ background: selectedPreview.color }}
-                    />
-                    <span className="text-[10px] font-mono text-neutral-400">
-                      {selectedPreview.color}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Action Buttons: Equip or Unlock */}
-            <div className="mt-4 pt-3 border-t border-neutral-800">
-              {isUnlocked(selectedPreview.id) ? (
-                <button
-                  disabled={activeSkinId === selectedPreview.id}
+              return (
+                <motion.div
+                  key={skin.id}
+                  layout
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.95 }}
+                  onMouseEnter={() => setSelectedPreview(skin)}
                   onClick={() => {
-                    sound.playClick();
-                    onSelectSkin(selectedPreview.id);
-                  }}
-                  className={`w-full py-2.5 rounded-[220px_15px_200px_18px/15px_220px_18px_200px] font-['Patrick_Hand'] text-base lowercase tracking-wide transition-all cursor-pointer ${
-                    activeSkinId === selectedPreview.id
-                      ? 'bg-neutral-800 text-neutral-500 cursor-not-allowed border border-neutral-700'
-                      : 'bg-neutral-100 hover:bg-white text-neutral-950 font-bold border border-white shadow-md active:scale-95'
-                  }`}
-                >
-                  {activeSkinId === selectedPreview.id ? 'equipped' : 'use skin'}
-                </button>
-              ) : (
-                <button
-                  onClick={() => {
-                    if (sugarCubes >= selectedPreview.cost) {
+                    setSelectedPreview(skin);
+                    if (unlocked) {
+                      sound.playClick();
+                      onSelectSkin(skin.id);
+                    } else if (sugarCubes >= skin.cost) {
                       sound.playSugarCollect();
-                      onUnlockSkin(selectedPreview.id, selectedPreview.cost);
+                      onUnlockSkin(skin.id, skin.cost);
                     } else {
                       sound.playHitSound();
                     }
                   }}
-                  className={`w-full py-2.5 rounded-[220px_15px_200px_18px/15px_220px_18px_200px] font-['Patrick_Hand'] text-base lowercase tracking-wide flex items-center justify-center gap-2 transition-all cursor-pointer ${
-                    sugarCubes >= selectedPreview.cost
-                      ? 'bg-neutral-100 hover:bg-white text-neutral-950 font-bold border border-white shadow-md active:scale-95'
-                      : 'bg-neutral-800 text-neutral-500 hover:bg-neutral-800 border border-neutral-700'
+                  className={`group relative flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer ${
+                    isSelected || isActive
+                      ? 'bg-neutral-800/90 shadow-lg'
+                      : 'bg-neutral-900/60 hover:bg-neutral-800/50'
                   }`}
+                  style={{
+                    borderColor: isActive
+                      ? skin.color
+                      : isSelected
+                      ? `${skin.color}80`
+                      : 'rgba(255, 255, 255, 0.08)',
+                  }}
                 >
-                  <Lock className="w-3.5 h-3.5" />
-                  {sugarCubes >= selectedPreview.cost
-                    ? `unlock for ${selectedPreview.cost} sugar`
-                    : `need ${selectedPreview.cost - sugarCubes} more sugar`}
-                </button>
-              )}
-            </div>
-          </div>
+                  <div className="flex items-center gap-3 min-w-0">
+                    <SkinRenderer skinId={skin.id} size={42} animated />
+
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span className="font-['Patrick_Hand'] text-base tracking-wide text-white truncate lowercase">
+                          {skin.name.toLowerCase()}
+                        </span>
+                        {skin.rarity && (
+                          <span
+                            className={`text-[10px] font-['Patrick_Hand'] lowercase px-1.5 py-0.2 rounded-md border ${getRarityBadgeColor(
+                              skin.rarity
+                            )}`}
+                          >
+                            {skin.rarity.toLowerCase()}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                    {isActive ? (
+                      <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-['Patrick_Hand'] bg-emerald-950/60 text-emerald-400 border border-emerald-800 lowercase">
+                        <Check className="w-3 h-3" />
+                        equipped
+                      </span>
+                    ) : unlocked ? (
+                      <span className="px-2 py-0.5 rounded-full text-xs font-['Patrick_Hand'] bg-neutral-800 text-neutral-400 lowercase">
+                        owned
+                      </span>
+                    ) : (
+                      <span
+                        className={`flex items-center gap-1 text-xs font-['Patrick_Hand'] px-2 py-0.5 rounded-lg border lowercase ${
+                          sugarCubes >= skin.cost
+                            ? 'text-white bg-neutral-700/80 border-neutral-500'
+                            : 'text-neutral-400 bg-neutral-800 border-neutral-700'
+                        }`}
+                      >
+                        <Box className="w-3 h-3 text-white" />
+                        <span>{skin.cost}</span>
+                      </span>
+                    )}
+                  </div>
+                </motion.div>
+              );
+            })}
+          </AnimatePresence>
         </div>
       </motion.div>
     </div>

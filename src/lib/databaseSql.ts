@@ -1,6 +1,6 @@
 export const SUPABASE_SETUP_SQL = `-- ===============================================================
 -- DAF (Dangerous Ant Farm) - SUPABASE DATABASE INITIALIZATION SCRIPT
--- rhythm-based game by misiori
+-- rhythm-based game by subnocte
 --
 -- Features:
 --  1. public.profiles:
@@ -67,6 +67,10 @@ BEGIN
 
   IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='profiles' AND column_name='avatar_url') THEN
     ALTER TABLE public.profiles ADD COLUMN avatar_url TEXT;
+  END IF;
+
+  IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='profiles' AND column_name='total_game_time_seconds') THEN
+    ALTER TABLE public.profiles ADD COLUMN total_game_time_seconds BIGINT DEFAULT 0 NOT NULL;
   END IF;
 END $$;
 

@@ -55,7 +55,7 @@ export const IntroScreen: React.FC<IntroScreenProps> = ({ onComplete }) => {
           transition={{ duration: 0.8, ease: 'easeOut' }}
           className="font-['Caveat'] text-4xl sm:text-5xl font-medium tracking-wide text-neutral-300 lowercase"
         >
-          misiori
+          subnocte
         </motion.div>
 
         {/* Minimal thin loading line */}

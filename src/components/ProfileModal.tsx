@@ -24,6 +24,10 @@ import {
   Bookmark,
   BookmarkCheck,
   ArrowLeft,
+  Eye,
+  EyeOff,
+  Star,
+  Clock,
 } from 'lucide-react';
 import {
   supabase,
@@ -53,9 +57,14 @@ import { SkinRenderer, getSkinById } from './SkinRenderer';
 import { LEVELS, DIFFICULTY_COLORS } from '../lib/constants';
 import { sound } from '../lib/audio';
 
-const isMisioriUser = (username?: string, email?: string) => {
+const isSubnocteUser = (username?: string, email?: string) => {
   const clean = (username || '').toLowerCase().trim().replace(/^@/, '');
-  return clean === 'misiori' || (email && email.toLowerCase() === 'misiori.gg@gmail.com');
+  return (
+    clean === 'subnocte' ||
+    clean === 'subn0cte' ||
+    clean === 'misiori' ||
+    (email && (email.toLowerCase() === 'subnocte.gg@gmail.com' || email.toLowerCase() === 'misiori.gg@gmail.com'))
+  );
 };
 
 interface ProfileModalProps {
@@ -218,10 +227,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
       return;
     }
 
-    // Protect @misiori / misiori
+    // Protect @subnocte / @misiori
     const cleanCandidate = trimmed.toLowerCase().replace(/^@/, '');
-    if (cleanCandidate === 'misiori' && !isMisioriUser(currentProfile.username, currentProfile.email)) {
-      setUsernameError('The @misiori username is reserved for the verified creator.');
+    if ((cleanCandidate === 'subnocte' || cleanCandidate === 'misiori') && !isSubnocteUser(currentProfile.username, currentProfile.email)) {
+      setUsernameError('The @subnocte username is reserved for the verified creator.');
       sound.playHitSound();
       return;
     }
@@ -465,8 +474,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
       }
 
       const cleanUser = trimmedUser.toLowerCase().replace(/^@/, '');
-      if (cleanUser === 'misiori' && trimmedEmail.toLowerCase() !== 'misiori.gg@gmail.com') {
-        throw new Error('The @misiori username is reserved for the verified creator.');
+      if ((cleanUser === 'subnocte' || cleanUser === 'misiori') && trimmedEmail.toLowerCase() !== 'subnocte.gg@gmail.com' && trimmedEmail.toLowerCase() !== 'misiori.gg@gmail.com') {
+        throw new Error('The @subnocte username is reserved for the verified creator.');
       }
 
       // Check case-insensitive uniqueness
@@ -590,12 +599,12 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             </div>
 
             <div>
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <h4 className="font-bold text-white font-['Patrick_Hand'] text-2xl leading-none">
                   {viewedPlayer.username}
                 </h4>
-                {isMisioriUser(viewedPlayer.username, viewedPlayer.email) && (
-                  <span className="inline-flex items-center justify-center self-center" title="Verified @misiori">
+                {isSubnocteUser(viewedPlayer.username, viewedPlayer.email) && (
+                  <span className="inline-flex items-center justify-center self-center" title="Verified @subnocte">
                     <CheckCircle2 className="w-4 h-4 fill-sky-400 text-neutral-950 inline-block shrink-0" />
                   </span>
                 )}
@@ -990,8 +999,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                         <h3 className="text-2xl font-bold font-['Patrick_Hand'] text-white leading-none">
                           {currentProfile.username}
                         </h3>
-                        {isMisioriUser(currentProfile.username, currentProfile.email) && (
-                          <span className="inline-flex items-center justify-center self-center" title="Verified @misiori">
+                        {isSubnocteUser(currentProfile.username, currentProfile.email) && (
+                          <span className="inline-flex items-center justify-center self-center" title="Verified @subnocte">
                             <CheckCircle2 className="w-4 h-4 fill-sky-400 text-neutral-950 inline-block drop-shadow shrink-0" />
                           </span>
                         )}
@@ -1070,6 +1079,25 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                       #{userRank} in top
                     </span>
                   </div>
+                </div>
+
+                {/* Total Playtime counter */}
+                <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-neutral-800/60 text-xs font-['Patrick_Hand'] text-neutral-400 lowercase">
+                  <span className="flex items-center gap-1">
+                    <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>total colony survival time:</span>
+                  </span>
+                  <span className="text-white font-bold">
+                    {(() => {
+                      const totalSecs = currentProfile.total_game_time_seconds || 0;
+                      const hrs = Math.floor(totalSecs / 3600);
+                      const mins = Math.floor((totalSecs % 3600) / 60);
+                      const secs = totalSecs % 60;
+                      if (hrs > 0) return `${hrs}h ${mins}m`;
+                      if (mins > 0) return `${mins}m ${secs}s`;
+                      return `${secs}s`;
+                    })()}
+                  </span>
                 </div>
               </div>
             </div>
@@ -1316,8 +1344,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                         <div>
                           <div className="font-bold text-base font-['Patrick_Hand'] text-white flex items-center gap-1.5">
                             <span className="leading-none">{player.username}</span>
-                            {isMisioriUser(player.username, player.email) && (
-                              <span className="inline-flex items-center justify-center self-center" title="Verified @misiori">
+                            {isSubnocteUser(player.username, player.email) && (
+                              <span className="inline-flex items-center justify-center self-center" title="Verified @subnocte">
                                 <CheckCircle2 className="w-3.5 h-3.5 fill-sky-400 text-neutral-950 inline-block shrink-0" />
                               </span>
                             )}
@@ -1408,8 +1436,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                         <div>
                           <div className="font-bold text-base font-['Patrick_Hand'] text-white flex items-center gap-1.5">
                             <span className="leading-none">{player.username}</span>
-                            {isMisioriUser(player.username, player.email) && (
-                              <span className="inline-flex items-center justify-center self-center" title="Verified @misiori">
+                            {isSubnocteUser(player.username, player.email) && (
+                              <span className="inline-flex items-center justify-center self-center" title="Verified @subnocte">
                                 <CheckCircle2 className="w-3.5 h-3.5 fill-sky-400 text-neutral-950 inline-block shrink-0" />
                               </span>
                             )}

@@ -102,7 +102,7 @@ export const ChamberInfoModal: React.FC<ChamberInfoModalProps> = ({ info, onClos
               creator:
             </span>
             <span className="font-bold text-neutral-200">
-              {info.isOfficial ? 'misiori' : info.creatorUsername || 'creator'}
+              {info.isOfficial ? 'subnocte' : info.creatorUsername || 'creator'}
             </span>
           </div>
 
